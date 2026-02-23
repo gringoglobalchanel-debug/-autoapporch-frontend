@@ -64,7 +64,7 @@ export default function DashboardPage() {
         setApps(allApps);
         
         // Filtrar apps desplegadas
-        const deployed = allApps.filter(app => app.deployed === true && app.deploy_url);
+       const deployed = allApps.filter((app: any) => app.deployed === true && app.deploy_url);
         setDeployedApps(deployed);
         
         // Seleccionar la primera app desplegada por defecto
