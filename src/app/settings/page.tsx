@@ -1,6 +1,5 @@
 /**
  * Página de configuración del usuario
- * Perfil, plan, facturación y preferencias
  */
 
 'use client';
@@ -13,38 +12,11 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
-  ArrowLeft,
-  User,
-  Mail,
-  CreditCard,
-  Bell,
-  Shield,
-  Palette,
-  Globe,
-  Save,
-  Loader2,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Sparkles,
-  Rocket,
-  Zap,
-  Clock,
-  Calendar,
-  Download,
-  Trash2,
-  LogOut,
-  Edit3,
-  Camera,
-  ChevronRight,
-  Crown,
-  Gem,
-  Award,
-  Star,
-  Infinity
+  ArrowLeft, User, Mail, CreditCard, Bell, Shield, Palette, Globe,
+  Save, Loader2, AlertCircle, Sparkles, Rocket, Zap, Clock,
+  Download, Trash2, LogOut, Camera, ChevronRight, Crown, Gem, Award, Star
 } from 'lucide-react';
 
-// Tipos
 interface Subscription {
   plan: string;
   status: string;
@@ -79,53 +51,34 @@ export default function SettingsPage() {
   const [limits, setLimits] = useState<Limits | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'notifications' | 'security'>('profile');
-  
-  // Form states
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [notifications, setNotifications] = useState<Notifications>({
-    email: true,
-    push: false,
-    marketing: false
-  });
+  const [notifications, setNotifications] = useState<Notifications>({ email: true, push: false, marketing: false });
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
+    if (!user) { router.push('/login'); return; }
     loadUserData();
   }, [user, router]);
 
   const loadUserData = async () => {
     try {
-      // Cargar perfil
       setFullName(user?.fullName || '');
       setEmail(user?.email || '');
 
-      // Cargar suscripción y límites en paralelo
       const [subResponse, limitsResponse] = await Promise.all([
         apiClient.stripe?.getSubscription?.().catch(() => null),
         apiClient.users?.getLimits?.().catch(() => null)
       ]);
 
-      if (subResponse?.data?.success) {
-        setSubscription(subResponse.data.subscription);
-      }
+      if (subResponse?.data?.success) setSubscription(subResponse.data.subscription);
 
       if (limitsResponse?.data?.success) {
         setLimits(limitsResponse.data.limits);
         setUsage(limitsResponse.data.usage);
-        
-        // Actualizar plan en el store si es diferente
-        if (limitsResponse.data.plan !== user?.plan) {
-          updateUser({ plan: limitsResponse.data.plan });
-        }
+        if (limitsResponse.data.plan !== user?.plan) updateUser({ plan: limitsResponse.data.plan });
       }
-
     } catch (error) {
       console.error('Error loading user data:', error);
       toast.error('Error al cargar los datos');
@@ -137,11 +90,7 @@ export default function SettingsPage() {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      const response = await apiClient.users.updateProfile({
-        fullName,
-        avatarUrl
-      });
-
+      const response = await apiClient.users.updateMe({ fullName, avatarUrl });
       if (response.data.success) {
         updateUser({ fullName, avatarUrl });
         toast.success('Perfil actualizado correctamente');
@@ -157,26 +106,15 @@ export default function SettingsPage() {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     try {
-      // Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
-      const { data, error } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file);
-
+      const { error } = await supabase.storage.from('avatars').upload(fileName, file);
       if (error) throw error;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
       setAvatarUrl(publicUrl);
       toast.success('Imagen subida correctamente');
     } catch (error) {
-      console.error('Error uploading avatar:', error);
       toast.error('Error al subir la imagen');
     }
   };
@@ -189,54 +127,34 @@ export default function SettingsPage() {
 
   const getPlanIcon = (plan: string) => {
     switch (plan) {
-      case 'pro':
-        return <Crown className="w-5 h-5 text-purple-600" />;
-      case 'basic':
-        return <Gem className="w-5 h-5 text-blue-600" />;
-      case 'enterprise':
-        return <Award className="w-5 h-5 text-amber-600" />;
-      default:
-        return <Star className="w-5 h-5 text-gray-600" />;
+      case 'pro': return <Crown className="w-5 h-5 text-purple-600" />;
+      case 'basic': return <Gem className="w-5 h-5 text-blue-600" />;
+      case 'enterprise': return <Award className="w-5 h-5 text-amber-600" />;
+      default: return <Star className="w-5 h-5 text-gray-600" />;
     }
   };
 
   const getPlanGradient = (plan: string) => {
     switch (plan) {
-      case 'pro':
-        return 'from-purple-600 to-indigo-600';
-      case 'basic':
-        return 'from-blue-600 to-cyan-600';
-      case 'enterprise':
-        return 'from-amber-600 to-orange-600';
-      default:
-        return 'from-gray-600 to-gray-800';
+      case 'pro': return 'from-purple-600 to-indigo-600';
+      case 'basic': return 'from-blue-600 to-cyan-600';
+      case 'enterprise': return 'from-amber-600 to-orange-600';
+      default: return 'from-gray-600 to-gray-800';
     }
   };
 
   const getPlanName = (plan: string) => {
     switch (plan) {
-      case 'pro':
-        return 'Pro';
-      case 'basic':
-        return 'Basic';
-      case 'enterprise':
-        return 'Enterprise';
-      default:
-        return 'Free';
+      case 'pro': return 'Pro';
+      case 'basic': return 'Basic';
+      case 'enterprise': return 'Enterprise';
+      default: return 'Free';
     }
-  };
-
-  const formatNumber = (num?: number) => {
-    return num?.toLocaleString() || '0';
   };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   if (loading) {
@@ -260,15 +178,11 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.back()}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
+              <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
               </button>
               <div>
@@ -276,11 +190,7 @@ export default function SettingsPage() {
                 <p className="text-sm text-gray-500">Gestiona tu cuenta y preferencias</p>
               </div>
             </div>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
+            <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
               <LogOut className="w-4 h-4" />
               Cerrar Sesión
             </button>
@@ -288,24 +198,14 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         {/* Plan Banner */}
         <div className={`bg-gradient-to-r ${planGradient} rounded-2xl shadow-lg p-6 mb-8 text-white`}>
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/10 rounded-xl">
-                {PlanIcon}
-              </div>
+              <div className="p-3 bg-white/10 rounded-xl">{PlanIcon}</div>
               <div>
-                <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
-                  Plan {planName}
-                  {currentPlan !== 'free' && (
-                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-normal">
-                      Activo
-                    </span>
-                  )}
-                </h2>
+                <h2 className="text-2xl font-bold mb-1">Plan {planName}</h2>
                 <p className="text-white/80 max-w-2xl">
                   {currentPlan === 'free' && 'Disfruta de las funcionalidades básicas. Actualiza para obtener más.'}
                   {currentPlan === 'basic' && 'Accede a más apps, mejoras y soporte prioritario.'}
@@ -315,10 +215,7 @@ export default function SettingsPage() {
               </div>
             </div>
             {currentPlan === 'free' && (
-              <Link
-                href="/billing"
-                className="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-all flex items-center gap-2"
-              >
+              <Link href="/billing" className="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-all flex items-center gap-2">
                 <Rocket className="w-5 h-5" />
                 Actualizar Plan
               </Link>
@@ -328,146 +225,65 @@ export default function SettingsPage() {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-gray-200 pb-2">
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'profile'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <User className="w-4 h-4 inline mr-2" />
-            Perfil
-          </button>
-          <button
-            onClick={() => setActiveTab('billing')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'billing'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <CreditCard className="w-4 h-4 inline mr-2" />
-            Facturación
-          </button>
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'notifications'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <Bell className="w-4 h-4 inline mr-2" />
-            Notificaciones
-          </button>
-          <button
-            onClick={() => setActiveTab('security')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'security'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <Shield className="w-4 h-4 inline mr-2" />
-            Seguridad
-          </button>
+          {(['profile', 'billing', 'notifications', 'security'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === tab ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+              {tab === 'profile' && <><User className="w-4 h-4 inline mr-2" />Perfil</>}
+              {tab === 'billing' && <><CreditCard className="w-4 h-4 inline mr-2" />Facturación</>}
+              {tab === 'notifications' && <><Bell className="w-4 h-4 inline mr-2" />Notificaciones</>}
+              {tab === 'security' && <><Shield className="w-4 h-4 inline mr-2" />Seguridad</>}
+            </button>
+          ))}
         </div>
 
-        {/* Tab Content */}
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Column */}
           <div className="lg:col-span-2 space-y-6">
+
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <>
-                {/* Avatar */}
                 <div className="bg-white rounded-2xl shadow-lg p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Foto de perfil</h3>
                   <div className="flex items-center gap-6">
                     <div className="relative">
-                      <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                        {avatarUrl ? (
-                          <img src={avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover" />
-                        ) : (
-                          user?.fullName?.charAt(0) || user?.email?.charAt(0) || 'U'
-                        )}
+                      <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
+                        {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : (user?.fullName?.charAt(0) || 'U')}
                       </div>
                       <label className="absolute bottom-0 right-0 p-1.5 bg-blue-600 text-white rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
                         <Camera className="w-4 h-4" />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          className="hidden"
-                        />
+                        <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                       </label>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        Sube una foto para personalizar tu perfil
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Formatos: JPG, PNG. Máx 2MB
-                      </p>
+                      <p className="text-sm text-gray-600 mb-2">Sube una foto para personalizar tu perfil</p>
+                      <p className="text-xs text-gray-500">Formatos: JPG, PNG. Máx 2MB</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Información personal */}
                 <div className="bg-white rounded-2xl shadow-lg p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Información personal</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nombre completo
-                      </label>
-                      <input
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Tu nombre"
-                      />
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nombre completo</label>
+                      <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Tu nombre" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Correo electrónico
-                      </label>
-                      <input
-                        type="email"
-                        value={email}
-                        disabled
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        No puedes cambiar el correo electrónico
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Correo electrónico</label>
+                      <input type="email" value={email} disabled className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed" />
+                      <p className="text-xs text-gray-500 mt-1">No puedes cambiar el correo electrónico</p>
                     </div>
                   </div>
-
                   <div className="mt-6 pt-6 border-t border-gray-200">
-                    <button
-                      onClick={handleSaveProfile}
-                      disabled={saving}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {saving ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          Guardando...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-5 h-5" />
-                          Guardar cambios
-                        </>
-                      )}
+                    <button onClick={handleSaveProfile} disabled={saving} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-2 disabled:opacity-50">
+                      {saving ? <><Loader2 className="w-5 h-5 animate-spin" />Guardando...</> : <><Save className="w-5 h-5" />Guardar cambios</>}
                     </button>
                   </div>
                 </div>
 
-                {/* Preferencias */}
                 <div className="bg-white rounded-2xl shadow-lg p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Preferencias</h3>
                   <div className="space-y-4">
@@ -480,16 +296,10 @@ export default function SettingsPage() {
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={theme === 'dark'}
-                          onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
-                          className="sr-only peer"
-                        />
+                        <input type="checkbox" checked={theme === 'dark'} onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')} className="sr-only peer" />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                       </label>
                     </div>
-
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <Globe className="w-5 h-5 text-gray-600" />
@@ -511,7 +321,6 @@ export default function SettingsPage() {
             {/* Billing Tab */}
             {activeTab === 'billing' && (
               <>
-                {/* Plan actual */}
                 <div className="bg-white rounded-2xl shadow-lg p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Plan actual</h3>
                   <div className={`bg-gradient-to-r ${planGradient} rounded-xl p-6 text-white`}>
@@ -520,16 +329,13 @@ export default function SettingsPage() {
                         <p className="text-sm opacity-90">Plan {planName}</p>
                         <p className="text-2xl font-bold mt-1">
                           {currentPlan === 'free' && 'Gratuito'}
-                          {currentPlan === 'basic' && '$9.99/mes'}
-                          {currentPlan === 'pro' && '$29.99/mes'}
+                          {currentPlan === 'basic' && '$29.99/mes'}
+                          {currentPlan === 'pro' && '$99.99/mes'}
                           {currentPlan === 'enterprise' && 'Personalizado'}
                         </p>
                       </div>
-                      <div className="p-3 bg-white/10 rounded-xl">
-                        {PlanIcon}
-                      </div>
+                      <div className="p-3 bg-white/10 rounded-xl">{PlanIcon}</div>
                     </div>
-                    
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-white/10 rounded-lg p-3">
                         <p className="text-xs opacity-90">Apps creadas</p>
@@ -537,54 +343,37 @@ export default function SettingsPage() {
                       </div>
                       <div className="bg-white/10 rounded-lg p-3">
                         <p className="text-xs opacity-90">Tokens usados</p>
-                        <p className="text-xl font-bold">{formatNumber(usage?.tokensUsed || 0)}</p>
+                        <p className="text-xl font-bold">{(usage?.tokensUsed || 0).toLocaleString()}</p>
                       </div>
                     </div>
                   </div>
-
                   {subscription?.trial_ends_at && (
                     <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <div className="flex items-center gap-3">
                         <Clock className="w-5 h-5 text-yellow-600" />
                         <div>
                           <p className="font-medium text-yellow-800">Período de prueba</p>
-                          <p className="text-sm text-yellow-700">
-                            Termina el {formatDate(subscription.trial_ends_at)}
-                          </p>
+                          <p className="text-sm text-yellow-700">Termina el {formatDate(subscription.trial_ends_at)}</p>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Historial de facturación */}
                 <div className="bg-white rounded-2xl shadow-lg p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Historial de facturación</h3>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">Plan Pro - Febrero 2026</p>
-                        <p className="text-xs text-gray-500">15 feb 2026</p>
+                    {['Febrero 2026', 'Enero 2026'].map((month) => (
+                      <div key={month} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Plan {planName} - {month}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="font-semibold text-gray-900">$49.99</span>
+                          <button className="text-blue-600 hover:text-blue-700"><Download className="w-4 h-4" /></button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-semibold text-gray-900">$29.99</span>
-                        <button className="text-blue-600 hover:text-blue-700">
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">Plan Pro - Enero 2026</p>
-                        <p className="text-xs text-gray-500">15 ene 2026</p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-semibold text-gray-900">$29.99</span>
-                        <button className="text-blue-600 hover:text-blue-700">
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </>
@@ -595,55 +384,23 @@ export default function SettingsPage() {
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Preferencias de notificaciones</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">Notificaciones por email</p>
-                      <p className="text-sm text-gray-500">Recibe actualizaciones sobre tus apps</p>
+                  {[
+                    { key: 'email' as const, label: 'Notificaciones por email', desc: 'Recibe actualizaciones sobre tus apps' },
+                    { key: 'push' as const, label: 'Notificaciones push', desc: 'Alertas en tiempo real en el navegador' },
+                    { key: 'marketing' as const, label: 'Marketing y promociones', desc: 'Recibe ofertas y novedades' },
+                  ].map(({ key, label, desc }) => (
+                    <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-900">{label}</p>
+                        <p className="text-sm text-gray-500">{desc}</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={notifications[key]} onChange={(e) => setNotifications({...notifications, [key]: e.target.checked})} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={notifications.email}
-                        onChange={(e) => setNotifications({...notifications, email: e.target.checked})}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">Notificaciones push</p>
-                      <p className="text-sm text-gray-500">Alertas en tiempo real en el navegador</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={notifications.push}
-                        onChange={(e) => setNotifications({...notifications, push: e.target.checked})}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">Marketing y promociones</p>
-                      <p className="text-sm text-gray-500">Recibe ofertas y novedades</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={notifications.marketing}
-                        onChange={(e) => setNotifications({...notifications, marketing: e.target.checked})}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
+                  ))}
                 </div>
-
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all">
                     Guardar preferencias
@@ -658,36 +415,12 @@ export default function SettingsPage() {
                 <div className="bg-white rounded-2xl shadow-lg p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Cambiar contraseña</h3>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Contraseña actual
-                      </label>
-                      <input
-                        type="password"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nueva contraseña
-                      </label>
-                      <input
-                        type="password"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Confirmar nueva contraseña
-                      </label>
-                      <input
-                        type="password"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="••••••••"
-                      />
-                    </div>
+                    {['Contraseña actual', 'Nueva contraseña', 'Confirmar nueva contraseña'].map((label) => (
+                      <div key={label}>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+                        <input type="password" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••" />
+                      </div>
+                    ))}
                   </div>
                   <div className="mt-6">
                     <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all">
@@ -696,25 +429,20 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Zona de peligro */}
                 <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-red-200">
                   <h3 className="text-lg font-bold text-red-600 mb-4 flex items-center gap-2">
                     <AlertCircle className="w-5 h-5" />
                     Zona de peligro
                   </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-red-900">Eliminar cuenta</p>
-                        <p className="text-sm text-red-700">
-                          Esta acción es permanente y no se puede deshacer
-                        </p>
-                      </div>
-                      <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
-                        <Trash2 className="w-4 h-4" />
-                        Eliminar
-                      </button>
+                  <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-red-900">Eliminar cuenta</p>
+                      <p className="text-sm text-red-700">Esta acción es permanente y no se puede deshacer</p>
                     </div>
+                    <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                      <Trash2 className="w-4 h-4" />
+                      Eliminar
+                    </button>
                   </div>
                 </div>
               </>
@@ -723,86 +451,49 @@ export default function SettingsPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Resumen de cuenta */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <h3 className="font-bold text-gray-900 mb-4">Resumen de cuenta</h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
-                    {user?.fullName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                    {user?.fullName?.charAt(0) || 'U'}
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">{user?.fullName || 'Usuario'}</p>
                     <p className="text-xs text-gray-500">{user?.email}</p>
                   </div>
                 </div>
-
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Plan</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      currentPlan === 'pro' ? 'bg-purple-100 text-purple-600' :
-                      currentPlan === 'basic' ? 'bg-blue-100 text-blue-600' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${currentPlan === 'pro' ? 'bg-purple-100 text-purple-600' : currentPlan === 'basic' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
                       {planName}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Miembro desde</span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {user?.created_at ? formatDate(user.created_at) : 'N/A'}
-                    </span>
-                  </div>
                 </div>
-
                 <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg text-white">
                   <p className="text-sm opacity-90 mb-1">Apps este mes</p>
                   <p className="text-2xl font-bold">{usage?.appsThisMonth || 0} / {limits?.appsPerMonth === -1 ? '∞' : limits?.appsPerMonth || 3}</p>
                   <div className="w-full h-2 bg-white/20 rounded-full mt-2">
-                    <div 
-                      className="h-full bg-white rounded-full"
-                      style={{ width: `${Math.min((usage?.appsThisMonth || 0) / (limits?.appsPerMonth || 3) * 100, 100)}%` }}
-                    />
+                    <div className="h-full bg-white rounded-full" style={{ width: `${Math.min((usage?.appsThisMonth || 0) / (limits?.appsPerMonth || 3) * 100, 100)}%` }} />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Enlaces rápidos */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-lg p-6 text-white">
               <h3 className="font-bold text-lg mb-4">Enlaces rápidos</h3>
               <div className="space-y-2">
-                <Link
-                  href="/billing"
-                  className="flex items-center justify-between p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <span className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4" />
-                    Facturación
-                  </span>
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/apps"
-                  className="flex items-center justify-between p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <span className="flex items-center gap-2">
-                    <Rocket className="w-4 h-4" />
-                    Mis apps
-                  </span>
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/support"
-                  className="flex items-center justify-between p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <span className="flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Soporte
-                  </span>
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
+                {[
+                  { href: '/billing', icon: CreditCard, label: 'Facturación' },
+                  { href: '/apps', icon: Rocket, label: 'Mis apps' },
+                  { href: '/support', icon: Shield, label: 'Soporte' },
+                ].map(({ href, icon: Icon, label }) => (
+                  <Link key={href} href={href} className="flex items-center justify-between p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
+                    <span className="flex items-center gap-2"><Icon className="w-4 h-4" />{label}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
