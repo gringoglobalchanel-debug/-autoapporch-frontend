@@ -15,9 +15,7 @@ import {
   Check, 
   Loader2, 
   CreditCard,
-  Sparkles,
-  Shield,
-  Zap
+  Shield
 } from 'lucide-react';
 
 export default function DomainsBillingPage() {
@@ -32,7 +30,7 @@ export default function DomainsBillingPage() {
 
   const loadSubscription = async () => {
     try {
-      const response = await apiClient.get('/api/stripe/subscription');
+      const response = await apiClient.stripe.getSubscription();
       if (response.data.success) {
         setSubscription(response.data.subscription);
       }
@@ -44,9 +42,7 @@ export default function DomainsBillingPage() {
   const handleCheckout = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.post('/api/billing/domains/extra', {
-        quantity
-      });
+      const response = await apiClient.stripe.createCheckout('extra_domain', quantity);
 
       if (response.data.url) {
         window.location.href = response.data.url;
@@ -67,16 +63,17 @@ export default function DomainsBillingPage() {
     return plans[plan] || plan;
   };
 
+  const domainsIncluded = subscription?.plan === 'premium' ? 1 : 5;
+  const domainsUsed = subscription?.domains_used || 0;
+  const domainsAvailable = domainsIncluded - domainsUsed;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
           <Link 
-            href={subscription?.plan === 'premium' || subscription?.plan === 'pro' 
-              ? `/apps/${subscription?.app_id}/domains` 
-              : '/dashboard'
-            } 
+            href="/billing"
             className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -116,28 +113,21 @@ export default function DomainsBillingPage() {
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Dominios incluidos:</span>
-                      <span className="font-medium">
-                        {subscription.plan === 'premium' ? '1' : '5'}
-                      </span>
+                      <span className="font-medium">{domainsIncluded}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Dominios usados:</span>
-                      <span className="font-medium">{subscription.domains_used || 0}</span>
+                      <span className="font-medium">{domainsUsed}</span>
                     </div>
                     <div className="flex justify-between text-blue-600 font-medium">
-                      <span>Dominios disponibles:</span>
-                      <span>
-                        {subscription.plan === 'premium' 
-                          ? 1 - (subscription.domains_used || 0)
-                          : 5 - (subscription.domains_used || 0)
-                        }
-                      </span>
+                      <span>Disponibles:</span>
+                      <span>{domainsAvailable}</span>
                     </div>
                   </div>
 
                   <div className="mt-6 pt-6 border-t">
                     <Link 
-                      href="/pricing"
+                      href="/billing"
                       className="text-sm text-blue-600 hover:text-blue-800"
                     >
                       Cambiar de plan →
@@ -284,7 +274,6 @@ export default function DomainsBillingPage() {
                     Sí, puedes eliminar dominios en cualquier momento. El cargo se prorratea.
                   </p>
                 </div>
-                
                 <div>
                   <p className="font-medium text-sm mb-1">¿Qué incluye la configuración?</p>
                   <p className="text-sm text-gray-600">
@@ -292,7 +281,6 @@ export default function DomainsBillingPage() {
                     Solo necesitas actualizar los nameservers de tu dominio.
                   </p>
                 </div>
-                
                 <div>
                   <p className="font-medium text-sm mb-1">¿Funciona con cualquier dominio?</p>
                   <p className="text-sm text-gray-600">
