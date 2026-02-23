@@ -42,7 +42,7 @@ export default function DomainsBillingPage() {
   const handleCheckout = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.stripe.createCheckout('extra_domain', quantity);
+      const response = await apiClient.stripe.createCheckout(`extra_domain_${quantity}`);
 
       if (response.data.url) {
         window.location.href = response.data.url;
