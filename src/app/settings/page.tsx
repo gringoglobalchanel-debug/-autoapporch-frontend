@@ -92,7 +92,11 @@ export default function SettingsPage() {
     try {
       const response = await apiClient.users.updateMe({ fullName, avatarUrl });
       if (response.data.success) {
-        updateUser({ fullName, avatarUrl });
+        // CORRECCIÓN: Cambiar avatarUrl a avatar_url para que coincida con el tipo esperado
+        updateUser({ 
+          fullName, 
+          avatar_url: avatarUrl  // Cambiado de avatarUrl a avatar_url
+        });
         toast.success('Perfil actualizado correctamente');
       }
     } catch (error) {
