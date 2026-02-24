@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { apiClient } from '@/lib/api';
+import api from '@/lib/api'; // 👈 CAMBIADO: importar api en lugar de apiClient
 import toast from 'react-hot-toast';
 import {
   Upload,
@@ -18,7 +18,8 @@ import {
   Image,
   FileText,
   Video,
-  Music
+  Music,
+  ExternalLink // 👈 AÑADIDO: faltaba este import
 } from 'lucide-react';
 
 interface FileSpec {
@@ -60,7 +61,12 @@ export default function FileUploader({ appId, specs = [], onUploadComplete }: Fi
           formData.append('fileSpec', JSON.stringify(spec));
         }
 
-        const response = await apiClient.upload.uploadFile(appId, formData);
+        // 👇 CORREGIDO: Usar api.post directamente
+        const response = await api.post('/api/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
         
         if (response.data.success) {
           uploaded.push(response.data.file);
@@ -95,7 +101,8 @@ export default function FileUploader({ appId, specs = [], onUploadComplete }: Fi
 
   const removeFile = async (fileId: string) => {
     try {
-      await apiClient.upload.deleteFile(fileId);
+      // 👇 CORREGIDO: También necesitas corregir esta llamada si existe
+      await api.delete(`/api/upload/${fileId}`);
       setUploadedFiles(uploadedFiles.filter(f => f.id !== fileId));
       toast.success('Archivo eliminado');
     } catch (error) {
