@@ -180,6 +180,9 @@ export const apiClient = {
     getApis: () =>
       api.get('/api/google/apis'),
     
+    getAuthUrl: (apiId: string) =>  // 👈 NUEVO MÉTODO AÑADIDO
+      api.get(`/api/google/auth/${apiId}`),
+    
     connectApi: (apiName: string) =>
       api.post('/api/google/connect', { apiName }),
     
