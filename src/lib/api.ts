@@ -131,12 +131,11 @@ export const apiClient = {
       api.delete('/api/users/me', { data: { confirmation } }),
   },
 
-    // ===== STRIPE =====
+  // ===== STRIPE =====
   stripe: {
     getPlans: () =>
       api.get('/api/stripe/plans'),
     
-    // ✅ CORREGIDO - Enviar {} en lugar de null
     createCheckout: (plan: string) =>
       api.post('/api/stripe/create-checkout', {}, {
         params: { plan }
@@ -174,6 +173,21 @@ export const apiClient = {
     
     checkLimits: () =>
       api.get('/api/domains/limits/check'),
+  },
+
+  // ===== GOOGLE APIS =====
+  google: {
+    getApis: () =>
+      api.get('/api/google/apis'),
+    
+    connectApi: (apiName: string) =>
+      api.post('/api/google/connect', { apiName }),
+    
+    disconnectApi: (apiName: string) =>
+      api.post('/api/google/disconnect', { apiName }),
+    
+    getStatus: () =>
+      api.get('/api/google/status'),
   },
 };
 
