@@ -1,7 +1,3 @@
-/**
- * Página de registro
- */
-
 'use client';
 
 import { useState } from 'react';
@@ -10,7 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store';
 import toast from 'react-hot-toast';
-import { Sparkles, Mail, Lock, User, Loader2 } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, Loader2, CreditCard } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -26,7 +22,7 @@ export default function RegisterPage() {
     e.preventDefault();
     
     if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error('La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
@@ -51,13 +47,15 @@ export default function RegisterPage() {
         fullName: formData.fullName,
       });
 
-      toast.success('Account created! Redirecting...');
+      toast.success('¡Cuenta creada! Elige tu plan para comenzar.');
       
+      // ✅ FIX: redirigir a /billing para elegir plan y poner tarjeta
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/billing?new_user=true');
       }, 1000);
+
     } catch (error: any) {
-      toast.error(error.message || 'Registration failed');
+      toast.error(error.message || 'Error al crear la cuenta');
     } finally {
       setLoading(false);
     }
@@ -76,22 +74,49 @@ export default function RegisterPage() {
           </Link>
         </div>
 
+        {/* Pasos */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <div className="flex items-center gap-1.5">
+            <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-bold">1</div>
+            <span className="text-sm font-medium text-blue-600">Crear cuenta</span>
+          </div>
+          <div className="w-8 h-0.5 bg-gray-300" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-7 h-7 rounded-full bg-gray-200 text-gray-500 text-xs flex items-center justify-center font-bold">2</div>
+            <span className="text-sm text-gray-400">Elegir plan</span>
+          </div>
+          <div className="w-8 h-0.5 bg-gray-300" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-7 h-7 rounded-full bg-gray-200 text-gray-500 text-xs flex items-center justify-center font-bold">3</div>
+            <span className="text-sm text-gray-400">Empezar</span>
+          </div>
+        </div>
+
+        {/* Banner trial */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-4 mb-6 flex items-center gap-3">
+          <CreditCard className="w-8 h-8 flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">7 días gratis, sin cobros inmediatos</p>
+            <p className="text-xs text-blue-200">Elige tu plan hoy y empieza a usar la plataforma. Se cobra al día 8.</p>
+          </div>
+        </div>
+
         {/* Card */}
         <div className="card p-8">
           <h1 className="text-2xl font-bold text-center mb-6">
-            Create your account
+            Crear tu cuenta
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label">Full Name</label>
+              <label className="label">Nombre completo</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   required
                   className="input pl-10"
-                  placeholder="John Doe"
+                  placeholder="Juan Pérez"
                   value={formData.fullName}
                   onChange={(e) =>
                     setFormData({ ...formData, fullName: e.target.value })
@@ -108,7 +133,7 @@ export default function RegisterPage() {
                   type="email"
                   required
                   className="input pl-10"
-                  placeholder="you@example.com"
+                  placeholder="tu@email.com"
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
@@ -118,7 +143,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="label">Password</label>
+              <label className="label">Contraseña</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -133,7 +158,7 @@ export default function RegisterPage() {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                At least 6 characters
+                Mínimo 6 caracteres
               </p>
             </div>
 
@@ -145,21 +170,26 @@ export default function RegisterPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Creating account...
+                  Creando cuenta...
                 </>
               ) : (
-                'Create account'
+                'Crear cuenta y elegir plan →'
               )}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-600 mt-6">
-            Already have an account?{' '}
+          <p className="text-center text-xs text-gray-500 mt-4">
+            Al crear tu cuenta aceptas nuestros términos de servicio. 
+            No se realiza ningún cobro hasta el día 8 del trial.
+          </p>
+
+          <p className="text-center text-sm text-gray-600 mt-4">
+            ¿Ya tienes cuenta?{' '}
             <Link
               href="/login"
               className="text-primary-600 hover:text-primary-700 font-medium"
             >
-              Log in
+              Inicia sesión
             </Link>
           </p>
         </div>
