@@ -1,6 +1,6 @@
 /**
- * Página de detalles de una app específica - VERSIÓN MEJORADA
- * Con dominio personalizado y Stripe Connect
+ * Página de detalles de una app específica
+ * RUTA: frontend/app/apps/[id]/page.jsx
  */
 
 'use client';
@@ -16,82 +16,21 @@ import {
   BarChart3, ExternalLink, Github, Server, Database, ChevronRight,
   Copy, Share2
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-
-type AppStatus = 'generating' | 'ready' | 'error' | 'updating' | 'deployed';
-
-interface TechStack {
-  frontend: string;
-  backend: string;
-  database: string;
-  style?: string;
-  colors?: {
-    primary: string;
-    secondary: string;
-    accent: string;
-    background: string;
-    surface: string;
-    text: string;
-  };
-}
-
-interface AppVersion {
-  id: string;
-  version: number;
-  created_at: string;
-  change_description?: string;
-  tokens_used?: number;
-  generation_time_ms?: number;
-}
-
-interface App {
-  id: string;
-  name: string;
-  description: string;
-  status: AppStatus;
-  created_at: string;
-  current_version?: number;
-  tech_stack?: TechStack;
-  deployed?: boolean;
-  deploy_url?: string;
-  deployment_status?: string;
-  vercel_project_id?: string;
-  custom_domain?: string;
-  domain_status?: string;
-  analytics?: {
-    visits?: number;
-    last_visit?: string;
-  };
-}
-
-interface Subscription {
-  plan: string;
-  status: string;
-  trial_ends_at?: string;
-  trialDaysRemaining?: number;
-  appsUsed: number;
-  appsAllowed: number;
-  tokensUsed: number;
-  tokensLimit: number;
-  domainsAllowed: number;
-  domainsUsed: number;
-}
 
 export default function AppDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [app, setApp] = useState<App | null>(null);
-  const [versions, setVersions] = useState<AppVersion[]>([]);
+  const [app, setApp] = useState(null);
+  const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [polling, setPolling] = useState(false);
   const [deploying, setDeploying] = useState(false);
-  const [deploymentStatus, setDeploymentStatus] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [deploymentStatus, setDeploymentStatus] = useState(null);
+  const [subscription, setSubscription] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  // Estados para dominio
   const [showDomainModal, setShowDomainModal] = useState(false);
-  const [domainSuggestions, setDomainSuggestions] = useState<any[]>([]);
+  const [domainSuggestions, setDomainSuggestions] = useState([]);
   const [domainSearch, setDomainSearch] = useState('');
   const [searchingDomains, setSearchingDomains] = useState(false);
   const [registeringDomain, setRegisteringDomain] = useState(false);
@@ -102,6 +41,13 @@ export default function AppDetailPage() {
   const getToken = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token;
+  };
+
+  // ✅ FIX: asegurar que la URL siempre tenga https://
+  const getSafeUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return `https://${url}`;
   };
 
   const getStyleColors = () => {
@@ -138,7 +84,7 @@ export default function AppDetailPage() {
         setSubscription(subData.subscription);
       }
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error loading app:', error);
     } finally {
       setLoading(false);
@@ -193,7 +139,7 @@ export default function AppDetailPage() {
         toast.success('¡App desplegada exitosamente!');
         setTimeout(() => loadApp(), 2000);
       }
-    } catch (error: any) {
+    } catch (error) {
       setDeploymentStatus('failed');
       if (error.status === 403) {
         toast.error('Necesitas un plan de pago para desplegar');
@@ -206,9 +152,6 @@ export default function AppDetailPage() {
     }
   };
 
-  // ═══════════════════════════════════════
-  // DOMINIO - Buscar sugerencias
-  // ═══════════════════════════════════════
   const searchDomains = async () => {
     if (!domainSearch.trim()) return;
     setSearchingDomains(true);
@@ -228,10 +171,7 @@ export default function AppDetailPage() {
     }
   };
 
-  // ═══════════════════════════════════════
-  // DOMINIO - Registrar
-  // ═══════════════════════════════════════
-  const registerDomain = async (domain: string) => {
+  const registerDomain = async (domain) => {
     setRegisteringDomain(true);
     setSelectedDomain(domain);
     try {
@@ -251,7 +191,7 @@ export default function AppDetailPage() {
         setShowDomainModal(false);
         setDomainSuggestions([]);
         setDomainSearch('');
-        loadApp(); // Recargar para mostrar el dominio
+        loadApp();
       } else if (data.upgradeRequired) {
         toast.error(data.message);
         router.push('/billing');
@@ -266,21 +206,20 @@ export default function AppDetailPage() {
     }
   };
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success('URL copiada al portapapeles');
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
       year: 'numeric', month: 'long', day: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
   };
 
-  // Plan permite dominios?
   const canAddDomain = subscription &&
     subscription.plan !== 'basico' &&
     (subscription.domainsAllowed - subscription.domainsUsed) > 0 &&
@@ -322,7 +261,7 @@ export default function AppDetailPage() {
     );
   }
 
-  const statusConfig: Record<AppStatus, { icon: LucideIcon; color: string; bgColor: string; text: string }> = {
+  const statusConfig = {
     generating: { icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100', text: 'Generando...' },
     ready: { icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-100', text: 'Lista' },
     deployed: { icon: Rocket, color: 'text-blue-600', bgColor: 'bg-blue-100', text: 'Desplegada' },
@@ -333,22 +272,19 @@ export default function AppDetailPage() {
   const config = statusConfig[app.status] || statusConfig.ready;
   const StatusIcon = config.icon;
   const colors = getStyleColors();
+  const safeDeployUrl = getSafeUrl(app.deploy_url);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
 
-      {/* ═══════════════════════════════════════
-          MODAL DE DOMINIO
-      ═══════════════════════════════════════ */}
+      {/* MODAL DE DOMINIO */}
       {showDomainModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Obtener dominio gratis</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  Te quedan {domainsRemaining} dominio(s) en tu plan
-                </p>
+                <p className="text-sm text-gray-500 mt-1">Te quedan {domainsRemaining} dominio(s) en tu plan</p>
               </div>
               <button
                 onClick={() => { setShowDomainModal(false); setDomainSuggestions([]); setDomainSearch(''); }}
@@ -358,7 +294,6 @@ export default function AppDetailPage() {
               </button>
             </div>
 
-            {/* Buscador */}
             <div className="flex gap-2 mb-4">
               <input
                 type="text"
@@ -377,14 +312,10 @@ export default function AppDetailPage() {
               </button>
             </div>
 
-            {/* Sugerencias */}
             {domainSuggestions.length > 0 && (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {domainSuggestions.map((suggestion) => (
-                  <div
-                    key={suggestion.domain}
-                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all"
-                  >
+                  <div key={suggestion.domain} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all">
                     <div>
                       <p className="font-medium text-gray-900">{suggestion.domain}</p>
                       {suggestion.price && (
@@ -404,13 +335,6 @@ export default function AppDetailPage() {
                     </button>
                   </div>
                 ))}
-              </div>
-            )}
-
-            {domainSuggestions.length === 0 && !searchingDomains && domainSearch && (
-              <div className="text-center py-8 text-gray-500">
-                <Globe className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                <p>Escribe el nombre de tu negocio y presiona Buscar</p>
               </div>
             )}
 
@@ -440,9 +364,10 @@ export default function AppDetailPage() {
                 <StatusIcon className="w-4 h-4" />
                 {config.text}
               </span>
-              {app.deployed && app.deploy_url && (
+              {/* ✅ FIX: usar safeDeployUrl en el botón "Abrir App" */}
+              {app.deployed && safeDeployUrl && (
                 <a
-                  href={app.deploy_url}
+                  href={safeDeployUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all flex items-center gap-2"
@@ -512,8 +437,8 @@ export default function AppDetailPage() {
               </div>
             )}
 
-            {/* App Desplegada */}
-            {app.deployed && app.deploy_url && (
+            {/* ✅ FIX: App Desplegada — usar safeDeployUrl en todos los enlaces */}
+            {app.deployed && safeDeployUrl && (
               <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl shadow-lg p-6 text-white">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -531,14 +456,22 @@ export default function AppDetailPage() {
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
-                          value={app.deploy_url}
+                          value={safeDeployUrl}
                           readOnly
                           className="flex-1 bg-white/20 text-white px-3 py-2 rounded-lg font-mono text-sm border border-white/30 focus:outline-none"
                         />
-                        <button onClick={() => copyToClipboard(app.deploy_url!)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                        <button
+                          onClick={() => copyToClipboard(safeDeployUrl)}
+                          className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                        >
                           {copied ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                         </button>
-                        <a href={app.deploy_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                        <a
+                          href={safeDeployUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                        >
                           <ExternalLink className="w-5 h-5" />
                         </a>
                       </div>
@@ -586,22 +519,19 @@ export default function AppDetailPage() {
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { label: 'Frontend', value: app.tech_stack.frontend || 'React', icon: Server, colors: 'from-blue-50 to-indigo-50 bg-blue-100 text-blue-600' },
-                    { label: 'Backend', value: app.tech_stack.backend || 'Node.js', icon: Database, colors: 'from-green-50 to-emerald-50 bg-green-100 text-green-600' },
-                    { label: 'Base de datos', value: app.tech_stack.database || 'PostgreSQL', icon: Database, colors: 'from-purple-50 to-pink-50 bg-purple-100 text-purple-600' },
-                    { label: 'Estilo', value: app.tech_stack.style || 'Moderno', icon: Palette, colors: 'from-orange-50 to-amber-50 bg-orange-100 text-orange-600' },
-                  ].map(({ label, value, icon: Icon, colors: c }) => {
-                    const [gradFrom,, iconBg, iconColor] = c.split(' ');
-                    return (
-                      <div key={label} className={`bg-gradient-to-br ${gradFrom} ${c.split(' ')[1]} rounded-xl p-4 text-center`}>
-                        <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center mx-auto mb-2`}>
-                          <Icon className={`w-5 h-5 ${iconColor}`} />
-                        </div>
-                        <p className="text-xs text-gray-500 mb-1">{label}</p>
-                        <p className="font-semibold text-gray-900 capitalize">{value}</p>
+                    { label: 'Frontend', value: app.tech_stack.frontend || 'React', icon: Server, bg: 'bg-blue-100', color: 'text-blue-600', grad: 'from-blue-50 to-indigo-50' },
+                    { label: 'Backend', value: app.tech_stack.backend || 'Node.js', icon: Database, bg: 'bg-green-100', color: 'text-green-600', grad: 'from-green-50 to-emerald-50' },
+                    { label: 'Base de datos', value: app.tech_stack.database || 'PostgreSQL', icon: Database, bg: 'bg-purple-100', color: 'text-purple-600', grad: 'from-purple-50 to-pink-50' },
+                    { label: 'Estilo', value: app.tech_stack.style || 'Moderno', icon: Palette, bg: 'bg-orange-100', color: 'text-orange-600', grad: 'from-orange-50 to-amber-50' },
+                  ].map(({ label, value, icon: Icon, bg, color, grad }) => (
+                    <div key={label} className={`bg-gradient-to-br ${grad} rounded-xl p-4 text-center`}>
+                      <div className={`w-10 h-10 ${bg} rounded-lg flex items-center justify-center mx-auto mb-2`}>
+                        <Icon className={`w-5 h-5 ${color}`} />
                       </div>
-                    );
-                  })}
+                      <p className="text-xs text-gray-500 mb-1">{label}</p>
+                      <p className="font-semibold text-gray-900 capitalize">{value}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -676,9 +606,7 @@ export default function AppDetailPage() {
               </div>
             )}
 
-            {/* ═══════════════════════════════════════
-                ACCIONES RÁPIDAS — con botón de dominio
-            ═══════════════════════════════════════ */}
+            {/* Acciones Rápidas */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-lg p-6 text-white">
               <h3 className="font-bold text-lg mb-4">Acciones rápidas</h3>
               <div className="space-y-3">
@@ -704,9 +632,10 @@ export default function AppDetailPage() {
                   <ChevronRight className="w-4 h-4" />
                 </Link>
 
-                {app.deployed && app.deploy_url && (
+                {/* ✅ FIX: compartir con safeDeployUrl */}
+                {app.deployed && safeDeployUrl && (
                   <button
-                    onClick={() => copyToClipboard(app.deploy_url!)}
+                    onClick={() => copyToClipboard(safeDeployUrl)}
                     className="w-full flex items-center justify-between p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
                   >
                     <span className="flex items-center gap-2">
@@ -717,7 +646,7 @@ export default function AppDetailPage() {
                   </button>
                 )}
 
-                {/* ── BOTÓN DE DOMINIO ── */}
+                {/* Botón de dominio */}
                 {app.deployed && !app.custom_domain && (
                   canAddDomain ? (
                     <button
