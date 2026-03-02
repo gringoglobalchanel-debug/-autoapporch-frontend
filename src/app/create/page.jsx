@@ -10,115 +10,51 @@ import { supabase } from '@/lib/supabase';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-// LOS 9 ESTILOS DEL BACKEND
 const STYLES = [
   {
-    id: 'modern',
-    name: 'Moderno',
-    description: 'Profesional y corporativo',
-    primary: '#3B82F6',
-    secondary: '#1E40AF',
-    accent: '#F59E0B',
-    background: '#FFFFFF',
-    surface: '#F9FAFB',
-    text: '#111827',
-    icon: '🎯'
+    id: 'modern', name: 'Moderno', description: 'Profesional y corporativo',
+    primary: '#3B82F6', secondary: '#1E40AF', accent: '#F59E0B',
+    background: '#FFFFFF', surface: '#F9FAFB', text: '#111827', icon: '🎯'
   },
   {
-    id: 'elegant',
-    name: 'Elegante',
-    description: 'Lujo y sofisticación',
-    primary: '#000000',
-    secondary: '#1F2937',
-    accent: '#FFD700',
-    background: '#FFFFFF',
-    surface: '#F3F4F6',
-    text: '#111827',
-    icon: '✨'
+    id: 'elegant', name: 'Elegante', description: 'Lujo y sofisticación',
+    primary: '#000000', secondary: '#1F2937', accent: '#FFD700',
+    background: '#FFFFFF', surface: '#F3F4F6', text: '#111827', icon: '✨'
   },
   {
-    id: 'minimal',
-    name: 'Minimalista',
-    description: 'Limpio y moderno',
-    primary: '#4B5563',
-    secondary: '#1F2937',
-    accent: '#10B981',
-    background: '#F9FAFB',
-    surface: '#FFFFFF',
-    text: '#1F2937',
-    icon: '○'
+    id: 'minimal', name: 'Minimalista', description: 'Limpio y moderno',
+    primary: '#4B5563', secondary: '#1F2937', accent: '#10B981',
+    background: '#F9FAFB', surface: '#FFFFFF', text: '#1F2937', icon: '○'
   },
   {
-    id: 'ocean',
-    name: 'Oceano',
-    description: 'Fresco y confiable',
-    primary: '#0EA5E9',
-    secondary: '#0284C7',
-    accent: '#F59E0B',
-    background: '#FFFFFF',
-    surface: '#F0F9FF',
-    text: '#0C4A6E',
-    icon: '🌊'
+    id: 'ocean', name: 'Oceano', description: 'Fresco y confiable',
+    primary: '#0EA5E9', secondary: '#0284C7', accent: '#F59E0B',
+    background: '#FFFFFF', surface: '#F0F9FF', text: '#0C4A6E', icon: '🌊'
   },
   {
-    id: 'emerald',
-    name: 'Esmeralda',
-    description: 'Frescura y crecimiento',
-    primary: '#10B981',
-    secondary: '#059669',
-    accent: '#F59E0B',
-    background: '#FFFFFF',
-    surface: '#ECFDF5',
-    text: '#064E3B',
-    icon: '💎'
+    id: 'emerald', name: 'Esmeralda', description: 'Frescura y crecimiento',
+    primary: '#10B981', secondary: '#059669', accent: '#F59E0B',
+    background: '#FFFFFF', surface: '#ECFDF5', text: '#064E3B', icon: '💎'
   },
   {
-    id: 'radiant',
-    name: 'Radiante',
-    description: 'Energía y acción',
-    primary: '#EF4444',
-    secondary: '#DC2626',
-    accent: '#F59E0B',
-    background: '#FFFFFF',
-    surface: '#FEF2F2',
-    text: '#991B1B',
-    icon: '🔥'
+    id: 'radiant', name: 'Radiante', description: 'Energía y acción',
+    primary: '#EF4444', secondary: '#DC2626', accent: '#F59E0B',
+    background: '#FFFFFF', surface: '#FEF2F2', text: '#991B1B', icon: '🔥'
   },
   {
-    id: 'royal',
-    name: 'Real',
-    description: 'Lujo y sofisticación',
-    primary: '#8B5CF6',
-    secondary: '#7C3AED',
-    accent: '#FCD34D',
-    background: '#FFFFFF',
-    surface: '#F5F3FF',
-    text: '#5B21B6',
-    icon: '👑'
+    id: 'royal', name: 'Real', description: 'Lujo y sofisticación',
+    primary: '#8B5CF6', secondary: '#7C3AED', accent: '#FCD34D',
+    background: '#FFFFFF', surface: '#F5F3FF', text: '#5B21B6', icon: '👑'
   },
   {
-    id: 'midnight',
-    name: 'Medianoche',
-    description: 'Elegancia y poder',
-    primary: '#1E293B',
-    secondary: '#0F172A',
-    accent: '#F59E0B',
-    background: '#F8FAFC',
-    surface: '#F1F5F9',
-    text: '#0F172A',
-    icon: '🌙'
+    id: 'midnight', name: 'Medianoche', description: 'Elegancia y poder',
+    primary: '#1E293B', secondary: '#0F172A', accent: '#F59E0B',
+    background: '#F8FAFC', surface: '#F1F5F9', text: '#0F172A', icon: '🌙'
   },
   {
-    id: 'sunset',
-    name: 'Atardecer',
-    description: 'Cálido y acogedor',
-    primary: '#F97316',
-    secondary: '#EA580C',
-    accent: '#3B82F6',
-    background: '#FFFFFF',
-    surface: '#FFF7ED',
-    text: '#9A3412',
-    icon: '🌅'
+    id: 'sunset', name: 'Atardecer', description: 'Cálido y acogedor',
+    primary: '#F97316', secondary: '#EA580C', accent: '#3B82F6',
+    background: '#FFFFFF', surface: '#FFF7ED', text: '#9A3412', icon: '🌅'
   }
 ];
 
@@ -129,11 +65,30 @@ export default function CreatePage() {
   const [showChat, setShowChat] = useState(false);
   const [generating, setGenerating] = useState(false);
 
-  const handleStartChat = () => {
+  const handleStartChat = async () => {
     if (!name.trim()) {
       toast.error('Por favor ingresa un nombre para tu app');
       return;
     }
+
+    // ✅ Verificar que tiene tarjeta registrada antes de abrir el chat
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_URL}/api/stripe/subscription`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      const sub = data.subscription;
+
+      if (!sub || !sub.stripe_subscription_id) {
+        toast.error('¡Necesitas elegir un plan primero! Tienes 7 días gratis.', { duration: 4000 });
+        router.push('/billing?required=true&return=/create');
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+    }
+
     setShowChat(true);
   };
 
@@ -143,22 +98,15 @@ export default function CreatePage() {
   };
 
   const buildDescription = (analysis, appName) => {
-    // Prioridad 1: conversación completa (más contexto)
     if (analysis.fullConversation) {
       return `App: ${appName}\n\nConversación con el usuario:\n${analysis.fullConversation}`;
     }
-
-    // Prioridad 2: description directa del análisis
     if (analysis.description && analysis.description.length > 30) {
       return analysis.description;
     }
-
-    // Prioridad 3: módulos si existen
     if (analysis.modules && analysis.modules.length > 0) {
       return analysis.modules.map(m => m.description || m.name).join('. ');
     }
-
-    // Fallback real basado en el nombre
     return `Crear una aplicación llamada "${appName}" con funcionalidades completas y diseño profesional.`;
   };
 
@@ -174,7 +122,6 @@ export default function CreatePage() {
         return;
       }
 
-      // Construir descripción rica desde la conversación
       const description = buildDescription(analysis, name);
 
       console.log('📋 Descripción enviada a Claude:', description.substring(0, 300));
@@ -186,8 +133,8 @@ export default function CreatePage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          name: name,
-          description: description,
+          name,
+          description,
           style: selectedStyle.id,
           colors: {
             primary: selectedStyle.primary,
@@ -203,19 +150,46 @@ export default function CreatePage() {
 
       const createData = await createResponse.json();
 
+      // ✅ FIX: manejar error de límite de plan con mensaje claro
       if (!createResponse.ok) {
+        if (createResponse.status === 403 && createData.upgradeRequired) {
+          // Guardar conversación para retomar después del pago
+          sessionStorage.setItem('pendingApp', JSON.stringify({
+            name,
+            description,
+            styleId: selectedStyle.id,
+            colors: {
+              primary: selectedStyle.primary,
+              secondary: selectedStyle.secondary,
+              accent: selectedStyle.accent,
+              background: selectedStyle.background,
+              surface: selectedStyle.surface,
+              text: selectedStyle.text
+            },
+            googleApis: analysis.googleApis || []
+          }));
+
+          // Mostrar el mensaje exacto del backend
+          toast.error(createData.message, { duration: 6000 });
+
+          setTimeout(() => {
+            router.push(`/billing?upgrade=true&return=/create`);
+          }, 2000);
+
+          setGenerating(false);
+          return;
+        }
+
         throw new Error(createData.message || 'Error al crear app');
       }
 
       const appId = createData.app.id;
-
       await pollAppStatus(appId, token);
-
       router.push(`/apps/${appId}`);
 
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Error al generar la app. Por favor intenta de nuevo.');
+      toast.error(error.message || 'Error al generar la app. Por favor intenta de nuevo.');
       setGenerating(false);
     }
   };
@@ -254,7 +228,6 @@ export default function CreatePage() {
     });
   };
 
-  // Pantalla de generación
   if (generating) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
@@ -263,12 +236,8 @@ export default function CreatePage() {
             <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full mx-auto flex items-center justify-center mb-4 animate-pulse">
               <Sparkles className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Generando tu App
-            </h2>
-            <p className="text-gray-600">
-              Claude está creando tu aplicación con estilo {selectedStyle.name}...
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Generando tu App</h2>
+            <p className="text-gray-600">Claude está creando tu aplicación con estilo {selectedStyle.name}...</p>
           </div>
 
           <div className="space-y-3 mb-6">
@@ -289,40 +258,28 @@ export default function CreatePage() {
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full animate-pulse" style={{ width: '60%' }}></div>
           </div>
-
-          <p className="text-xs text-gray-500 mt-4">
-            Esto puede tomar entre 30 segundos y 1 minuto
-          </p>
+          <p className="text-xs text-gray-500 mt-4">Esto puede tomar entre 30 segundos y 1 minuto</p>
         </div>
       </div>
     );
   }
 
-  // Vista del Chat
   if (showChat) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8 px-4">
         <div className="max-w-4xl mx-auto">
-          <button
-            onClick={() => setShowChat(false)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-          >
+          <button onClick={() => setShowChat(false)} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6">
             <ArrowLeft className="w-5 h-5" />
             Volver
           </button>
 
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Creando: {name}
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Creando: {name}</h1>
             <div className="flex items-center gap-2">
               <span className="text-gray-600">Estilo seleccionado:</span>
               <span
                 className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm"
-                style={{
-                  backgroundColor: selectedStyle.primary + '20',
-                  color: selectedStyle.primary
-                }}
+                style={{ backgroundColor: selectedStyle.primary + '20', color: selectedStyle.primary }}
               >
                 <span>{selectedStyle.icon}</span>
                 {selectedStyle.name}
@@ -330,16 +287,12 @@ export default function CreatePage() {
             </div>
           </div>
 
-          <AppCreationChat
-            onConfirm={handleChatConfirm}
-            onCancel={() => setShowChat(false)}
-          />
+          <AppCreationChat onConfirm={handleChatConfirm} onCancel={() => setShowChat(false)} />
         </div>
       </div>
     );
   }
 
-  // Vista Principal
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
@@ -356,21 +309,14 @@ export default function CreatePage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
             <Sparkles className="w-8 h-8 text-blue-600" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Crea tu app con asistente IA
-          </h1>
-          <p className="text-xl text-gray-600">
-            1. Elige un estilo • 2. Conversa con Claude • 3. Recibe tu app
-          </p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Crea tu app con asistente IA</h1>
+          <p className="text-xl text-gray-600">1. Elige un estilo • 2. Conversa con Claude • 3. Recibe tu app</p>
         </div>
 
         <div className="space-y-8">
-          {/* Nombre de la app */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <label className="block">
-              <span className="text-lg font-semibold text-gray-900 mb-2 block">
-                📱 Nombre de tu app
-              </span>
+              <span className="text-lg font-semibold text-gray-900 mb-2 block">📱 Nombre de tu app</span>
               <input
                 type="text"
                 value={name}
@@ -382,13 +328,10 @@ export default function CreatePage() {
             </label>
           </div>
 
-          {/* Estilos */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-2 mb-6">
               <Palette className="w-5 h-5 text-gray-700" />
-              <span className="text-lg font-semibold text-gray-900">
-                Elige el estilo de tu app
-              </span>
+              <span className="text-lg font-semibold text-gray-900">Elige el estilo de tu app</span>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -398,9 +341,7 @@ export default function CreatePage() {
                   type="button"
                   onClick={() => setSelectedStyle(style)}
                   className={`relative p-5 rounded-xl border-2 transition-all ${
-                    selectedStyle.id === style.id
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                    selectedStyle.id === style.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   {selectedStyle.id === style.id && (
@@ -408,13 +349,11 @@ export default function CreatePage() {
                       <Check className="w-5 h-5 text-blue-600" />
                     </div>
                   )}
-
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <div className="w-10 h-10 rounded-lg shadow-sm" style={{ backgroundColor: style.primary }} />
                       <div className="w-6 h-6 rounded-full" style={{ backgroundColor: style.accent }} />
                     </div>
-
                     <div className="text-left">
                       <div className="font-bold text-gray-900 flex items-center gap-1 text-lg">
                         <span>{style.icon}</span>
@@ -422,7 +361,6 @@ export default function CreatePage() {
                       </div>
                       <p className="text-sm text-gray-600 mt-1">{style.description}</p>
                     </div>
-
                     <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: style.surface }}>
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 rounded-full" style={{ backgroundColor: style.primary }} />
@@ -440,7 +378,6 @@ export default function CreatePage() {
             </div>
           </div>
 
-          {/* Botón principal */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg p-8 text-white">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div>
@@ -452,7 +389,6 @@ export default function CreatePage() {
                   Durante la conversación, Claude te preguntará si necesitas integraciones como Google Maps, Drive o Calendar.
                 </p>
               </div>
-
               <button
                 onClick={handleStartChat}
                 disabled={!name.trim()}

@@ -1,8 +1,3 @@
-/**
- * Dashboard mejorado con selector de apps desplegadas
- * y estadísticas en tiempo real
- */
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,24 +7,9 @@ import { apiClient } from '@/lib/api';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
-  Plus,
-  Sparkles,
-  Clock,
-  CheckCircle,
-  XCircle,
-  LogOut,
-  Settings,
-  CreditCard,
-  Loader2,
-  ChevronDown,
-  Rocket,
-  Globe,
-  Layout,
-  Zap,
-  BarChart3,
-  ChevronRight,
-  ExternalLink,
-  Layers
+  Plus, Sparkles, Clock, CheckCircle, XCircle, LogOut, Settings,
+  CreditCard, Loader2, ChevronDown, Rocket, Globe, Layout, Zap,
+  BarChart3, ChevronRight, ExternalLink, Layers, AlertTriangle
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -41,19 +21,19 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<any>(null);
   const [showAppSelector, setShowAppSelector] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'loading' | 'active' | 'no_card' | null>('loading');
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState<number>(0);
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
-
     loadDashboard();
   }, [user, router]);
 
   const loadDashboard = async () => {
     try {
-      // Cargar apps y estadísticas en paralelo
       const [appsResponse, statsResponse] = await Promise.all([
         apiClient.apps.getAll({ limit: 100 }),
         apiClient.users.getStats(),
@@ -62,33 +42,46 @@ export default function DashboardPage() {
       if (appsResponse.data.success) {
         const allApps = appsResponse.data.apps || [];
         setApps(allApps);
-        
-        // Filtrar apps desplegadas
-       const deployed = allApps.filter((app: any) => app.deployed === true && app.deploy_url);
+        const deployed = allApps.filter((app: any) => app.deployed === true && app.deploy_url);
         setDeployedApps(deployed);
-        
-        // Seleccionar la primera app desplegada por defecto
-        if (deployed.length > 0) {
-          setSelectedApp(deployed[0]);
-        }
+        if (deployed.length > 0) setSelectedApp(deployed[0]);
       }
 
       if (statsResponse.data.success) {
         setStats(statsResponse.data.stats);
       }
 
-      // Cargar límites del usuario para obtener el plan actualizado
+      // Actualizar plan en store
       try {
         const limitsResponse = await apiClient.users.getLimits();
         if (limitsResponse.data.success) {
           const newPlan = limitsResponse.data.plan;
-          // Si el plan cambió, actualizar el store
-          if (newPlan !== user?.plan) {
-            updateUser({ plan: newPlan });
-          }
+          if (newPlan !== user?.plan) updateUser({ plan: newPlan });
         }
       } catch (error) {
         console.error('Error loading user limits:', error);
+      }
+
+      // ✅ Verificar si tiene tarjeta registrada (stripe_subscription_id)
+      try {
+        const subResponse = await apiClient.stripe.getSubscription();
+        const sub = subResponse.data.subscription;
+
+        if (!sub || !sub.stripe_subscription_id) {
+          setSubscriptionStatus('no_card');
+        } else {
+          setSubscriptionStatus('active');
+
+          // Calcular días de trial restantes
+          if (sub.status === 'trial' && sub.trial_ends_at) {
+            const now = new Date();
+            const trialEnds = new Date(sub.trial_ends_at);
+            const days = Math.max(0, Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+            setTrialDaysRemaining(days);
+          }
+        }
+      } catch {
+        setSubscriptionStatus('no_card');
       }
 
     } catch (error: any) {
@@ -111,43 +104,30 @@ export default function DashboardPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'ready':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'ready': return <CheckCircle className="w-5 h-5 text-green-600" />;
       case 'generating':
-      case 'updating':
-        return <Clock className="w-5 h-5 text-yellow-600 animate-pulse" />;
-      case 'error':
-        return <XCircle className="w-5 h-5 text-red-600" />;
-      default:
-        return <Clock className="w-5 h-5 text-gray-600" />;
+      case 'updating': return <Clock className="w-5 h-5 text-yellow-600 animate-pulse" />;
+      case 'error': return <XCircle className="w-5 h-5 text-red-600" />;
+      default: return <Clock className="w-5 h-5 text-gray-600" />;
     }
   };
 
-  // Función para obtener el gradiente según el plan
   const getPlanGradient = () => {
     switch (user?.plan) {
-      case 'pro':
-        return 'from-purple-600 to-indigo-600';
-      case 'basic':
-        return 'from-blue-600 to-cyan-600';
-      case 'enterprise':
-        return 'from-amber-600 to-orange-600';
-      default:
-        return 'from-gray-600 to-gray-800';
+      case 'pro': return 'from-purple-600 to-indigo-600';
+      case 'premium': return 'from-blue-600 to-cyan-600';
+      case 'basico': return 'from-teal-600 to-green-600';
+      default: return 'from-gray-600 to-gray-800';
     }
   };
 
-  // Formatear nombre del plan
   const getPlanName = () => {
     switch (user?.plan) {
-      case 'pro':
-        return 'Pro';
-      case 'basic':
-        return 'Basic';
-      case 'enterprise':
-        return 'Enterprise';
-      default:
-        return 'Free';
+      case 'pro': return 'Pro';
+      case 'premium': return 'Premium';
+      case 'basico': return 'Básico';
+      case 'free_trial': return 'Prueba Gratuita';
+      default: return 'Free';
     }
   };
 
@@ -167,7 +147,46 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header con gradiente profesional */}
+
+      {/* ✅ Banner de plan requerido — aparece si no tiene tarjeta registrada */}
+      {subscriptionStatus === 'no_card' && (
+        <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+          <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Elige un plan para comenzar a crear apps</p>
+                <p className="text-sm text-orange-100">7 días gratis en cualquier plan. No se cobra nada hasta el día 8.</p>
+              </div>
+            </div>
+            <Link
+              href="/billing?required=true"
+              className="bg-white text-orange-600 px-5 py-2 rounded-lg font-semibold hover:bg-orange-50 transition-colors whitespace-nowrap flex-shrink-0"
+            >
+              Elegir plan →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Banner de días de trial restantes */}
+      {subscriptionStatus === 'active' && trialDaysRemaining > 0 && (
+        <div className="bg-blue-600 text-white">
+          <div className="container mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 flex-shrink-0" />
+              <p className="text-sm font-medium">
+                Te quedan <strong>{trialDaysRemaining} día{trialDaysRemaining !== 1 ? 's' : ''}</strong> de prueba gratuita. Después se cobrará automáticamente.
+              </p>
+            </div>
+            <Link href="/billing" className="text-sm bg-white/20 hover:bg-white/30 px-4 py-1 rounded-full transition-colors whitespace-nowrap">
+              Ver mi plan
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <header className={`bg-gradient-to-r ${getPlanGradient()} text-white shadow-lg`}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
@@ -180,14 +199,10 @@ export default function DashboardPage() {
             </Link>
 
             <div className="flex items-center space-x-4">
-              {/* Plan Badge - AHORA MUESTRA EL PLAN CORRECTO */}
               <div className="px-4 py-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20">
-                <span className="text-sm font-medium uppercase tracking-wider">
-                  {getPlanName()} Plan
-                </span>
+                <span className="text-sm font-medium uppercase tracking-wider">{getPlanName()} Plan</span>
               </div>
 
-              {/* User Menu */}
               <div className="relative group">
                 <button className="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/10 transition-all">
                   <div className="w-10 h-10 bg-white text-blue-600 rounded-full flex items-center justify-center font-bold shadow-lg">
@@ -196,7 +211,6 @@ export default function DashboardPage() {
                   <ChevronDown className="w-4 h-4 group-hover:rotate-180 transition-transform" />
                 </button>
 
-                {/* Dropdown */}
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                   <div className="p-4 border-b">
                     <p className="font-semibold text-gray-900">{user?.fullName || 'Usuario'}</p>
@@ -227,11 +241,12 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section con gradiente */}
+
+        {/* Welcome Section */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+              <h1 className="text-3xl font-bold mb-2 flex items-center gap-2 flex-wrap">
                 <span>¡Bienvenido de nuevo,</span>
                 <span className="bg-white/20 px-4 py-1 rounded-full">
                   {user?.fullName?.split(' ')[0] || 'Usuario'}
@@ -248,7 +263,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Stats Cards con datos REALES */}
+        {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-600 transform hover:scale-105 transition-all">
@@ -265,9 +280,7 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium text-gray-600">Listas</p>
                 <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
-              <p className="text-3xl font-bold text-green-600">
-                {stats.appsByStatus?.ready || 0}
-              </p>
+              <p className="text-3xl font-bold text-green-600">{stats.appsByStatus?.ready || 0}</p>
               <p className="text-xs text-gray-500 mt-2">Apps listas para desplegar</p>
             </div>
 
@@ -276,9 +289,7 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium text-gray-600">En Proceso</p>
                 <Clock className="w-5 h-5 text-yellow-600" />
               </div>
-              <p className="text-3xl font-bold text-yellow-600">
-                {stats.appsByStatus?.generating || 0}
-              </p>
+              <p className="text-3xl font-bold text-yellow-600">{stats.appsByStatus?.generating || 0}</p>
               <p className="text-xs text-gray-500 mt-2">Generándose ahora</p>
             </div>
 
@@ -287,15 +298,13 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium text-gray-600">Versiones</p>
                 <Layers className="w-5 h-5 text-purple-600" />
               </div>
-              <p className="text-3xl font-bold text-purple-600">
-                {stats.totalVersions || 0}
-              </p>
+              <p className="text-3xl font-bold text-purple-600">{stats.totalVersions || 0}</p>
               <p className="text-xs text-gray-500 mt-2">Iteraciones totales</p>
             </div>
           </div>
         )}
 
-        {/* Selector de Apps Desplegadas - SOLO SI HAY APPS DESPLEGADAS */}
+        {/* Selector de Apps Desplegadas */}
         {deployedApps.length > 0 ? (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -308,7 +317,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Selector personalizado */}
             <div className="relative mb-4">
               <button
                 onClick={() => setShowAppSelector(!showAppSelector)}
@@ -330,19 +338,13 @@ export default function DashboardPage() {
                 <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${showAppSelector ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Dropdown de apps */}
               {showAppSelector && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto">
                   {deployedApps.map((app) => (
                     <button
                       key={app.id}
-                      onClick={() => {
-                        setSelectedApp(app);
-                        setShowAppSelector(false);
-                      }}
-                      className={`w-full p-3 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b last:border-b-0 ${
-                        selectedApp?.id === app.id ? 'bg-blue-50' : ''
-                      }`}
+                      onClick={() => { setSelectedApp(app); setShowAppSelector(false); }}
+                      className={`w-full p-3 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b last:border-b-0 ${selectedApp?.id === app.id ? 'bg-blue-50' : ''}`}
                     >
                       <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         <Globe className="w-4 h-4 text-green-600" />
@@ -351,16 +353,13 @@ export default function DashboardPage() {
                         <p className="font-medium text-gray-900">{app.name}</p>
                         <p className="text-xs text-gray-500 truncate">{app.deploy_url}</p>
                       </div>
-                      {selectedApp?.id === app.id && (
-                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                      )}
+                      {selectedApp?.id === app.id && <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Vista previa de la app seleccionada */}
             {selectedApp && (
               <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-6 text-white">
                 <div className="flex items-center justify-between mb-4">
@@ -397,31 +396,23 @@ export default function DashboardPage() {
             )}
           </div>
         ) : (
-          /* Mensaje cuando no hay apps desplegadas */
           <div className="bg-white rounded-xl shadow-lg p-8 mb-8 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
               <Rocket className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No tienes apps desplegadas
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Las apps que despliegues aparecerán aquí para acceso rápido
-            </p>
-            <Link 
-              href="/create" 
-              className="inline-flex items-center gap-2 text-blue-600 font-medium hover:text-blue-700"
-            >
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No tienes apps desplegadas</h3>
+            <p className="text-gray-600 mb-4">Las apps que despliegues aparecerán aquí para acceso rápido</p>
+            <Link href="/create" className="inline-flex items-center gap-2 text-blue-600 font-medium hover:text-blue-700">
               <Plus className="w-4 h-4" />
               Crear una app
             </Link>
           </div>
         )}
 
-        {/* Quick Actions Mejoradas con gradientes */}
+        {/* Quick Actions */}
         <div className="mt-8 grid md:grid-cols-3 gap-6">
-          <Link 
-            href="/create" 
+          <Link
+            href={subscriptionStatus === 'no_card' ? '/billing?required=true' : '/create'}
             className="group bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-lg p-6 text-white hover:shadow-2xl transform hover:scale-105 transition-all"
           >
             <div className="flex items-center justify-between mb-4">
@@ -430,16 +421,19 @@ export default function DashboardPage() {
             </div>
             <h3 className="font-bold text-xl mb-2">Crear Nueva App</h3>
             <p className="text-blue-100 text-sm">
-              Genera apps con IA en segundos. Solo describe lo que necesitas.
+              {subscriptionStatus === 'no_card'
+                ? 'Elige un plan primero para empezar a crear apps.'
+                : 'Genera apps con IA en segundos. Solo describe lo que necesitas.'}
             </p>
             <div className="mt-4 inline-flex items-center text-sm bg-white/20 px-3 py-1 rounded-full">
-              <Zap className="w-3 h-3 mr-1" />
-              Tiempo estimado: 30-60s
+              {subscriptionStatus === 'no_card'
+                ? <><AlertTriangle className="w-3 h-3 mr-1" /> Requiere plan</>
+                : <><Zap className="w-3 h-3 mr-1" /> Tiempo estimado: 30-60s</>}
             </div>
           </Link>
 
-          <Link 
-            href="/apps"  // 👈 AHORA VA A /apps
+          <Link
+            href="/apps"
             className="group bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl shadow-lg p-6 text-white hover:shadow-2xl transform hover:scale-105 transition-all"
           >
             <div className="flex items-center justify-between mb-4">
@@ -447,30 +441,32 @@ export default function DashboardPage() {
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </div>
             <h3 className="font-bold text-xl mb-2">Ver Todas las Apps</h3>
-            <p className="text-purple-100 text-sm">
-              Gestiona y monitorea todas tus aplicaciones generadas.
-            </p>
+            <p className="text-purple-100 text-sm">Gestiona y monitorea todas tus aplicaciones generadas.</p>
             <div className="mt-4 inline-flex items-center text-sm bg-white/20 px-3 py-1 rounded-full">
               <BarChart3 className="w-3 h-3 mr-1" />
               {apps.length} apps creadas
             </div>
           </Link>
 
-          <Link 
-            href="/billing" 
+          <Link
+            href="/billing"
             className="group bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl shadow-lg p-6 text-white hover:shadow-2xl transform hover:scale-105 transition-all"
           >
             <div className="flex items-center justify-between mb-4">
               <CreditCard className="w-8 h-8 group-hover:rotate-12 transition-transform" />
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </div>
-            <h3 className="font-bold text-xl mb-2">Mejorar Plan</h3>
+            <h3 className="font-bold text-xl mb-2">
+              {subscriptionStatus === 'no_card' ? 'Elegir Plan' : 'Mejorar Plan'}
+            </h3>
             <p className="text-green-100 text-sm">
-              Desbloquea más apps, deploys y características premium.
+              {subscriptionStatus === 'no_card'
+                ? '7 días gratis. Elige tu plan y empieza a crear.'
+                : 'Desbloquea más apps, deploys y características premium.'}
             </p>
             <div className="mt-4 inline-flex items-center text-sm bg-white/20 px-3 py-1 rounded-full">
               <Rocket className="w-3 h-3 mr-1" />
-              Plan actual: {getPlanName()}  {/* 👈 AHORA MUESTRA EL PLAN CORRECTO */}
+              Plan actual: {getPlanName()}
             </div>
           </Link>
         </div>

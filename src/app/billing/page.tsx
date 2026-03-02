@@ -87,6 +87,12 @@ export default function BillingPage() {
     loadCurrentPlan();
     if (upgradeSuccess) {
       toast.success('¡Plan actualizado exitosamente!');
+      // ✅ Si hay una app pendiente, redirigir a /create para retomar
+      const pendingApp = sessionStorage.getItem('pendingApp');
+      if (pendingApp) {
+        toast('Retomando tu app pendiente...', { icon: '🚀', duration: 2000 });
+        setTimeout(() => { router.push('/create?resume=true'); }, 2500);
+      }
     }
   }, []);
 
